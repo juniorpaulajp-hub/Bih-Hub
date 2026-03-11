@@ -1,16 +1,11 @@
-// ─── STORAGE usando JSONBin.io (gratuito, compartilhado) ────────────────────
-// JSONBin permite criar um "bin" (JSON público) que qualquer um pode ler/escrever.
-// Limite gratuito: 10.000 requests/mês — mais que suficiente para uso diário.
-
 const BIN_ID = import.meta.env.VITE_BIN_ID || null;
-const API_KEY = import.meta.env.VITE_JSONBIN_KEY || null;
+const API_KEY = (import.meta.env.VITE_JSONBIN_KEY || '').replace(/^"|"$/g, '');
 const BASE_URL = "https://api.jsonbin.io/v3/b";
 
-let cache = null; // cache local para evitar requests desnecessários
+let cache = null;
 
 export async function loadAll(fallback) {
   if (!BIN_ID || !API_KEY) {
-    // Modo offline: usa localStorage
     const local = localStorage.getItem("bih-hub-data");
     return local ? JSON.parse(local) : fallback;
   }
@@ -28,10 +23,8 @@ export async function loadAll(fallback) {
 }
 
 export async function saveAll(data) {
-  // Sempre salva local como backup
   localStorage.setItem("bih-hub-data", JSON.stringify(data));
   cache = data;
-
   if (!BIN_ID || !API_KEY) return;
   try {
     await fetch(`${BASE_URL}/${BIN_ID}`, {
@@ -42,7 +35,10 @@ export async function saveAll(data) {
       },
       body: JSON.stringify(data),
     });
-  } catch {
-    // falha silenciosa — dado já foi salvo no localStorage
-  }
+  } catch {}
 }
+```
+
+Depois no Vercel, coloque o valor da `VITE_JSONBIN_KEY` **entre aspas duplas** assim:
+```
+"$2a$10$NLRkfzqsKX7gVXWjDvvBT.cK0Pk4DKX2gl/wi9O2yQqJ/nyWhzqQ."
