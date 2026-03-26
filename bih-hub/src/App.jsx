@@ -671,134 +671,218 @@ function Lancamento({ checklist, updateChecklist, progPct, doneCount }) {
   );
 }
 
-// ─── IDEIAS ───────────────────────────────────────────────────────────────────
+// ─── IDEIAS — KANBAN ──────────────────────────────────────────────────────────
+const KANBAN_COLUNAS = [
+  { id:"ideias",   label:"💡 Ideias",       cor:"#6B5BB5", bg:"#F3F0FF" },
+  { id:"producao", label:"🎬 Em Produção",  cor:"#C4703B", bg:"#FFF4EE" },
+  { id:"gravado",  label:"🎥 Gravado",      cor:"#2563AB", bg:"#EEF4FF" },
+  { id:"editando", label:"✂️ Editando",     cor:"#8B5E00", bg:"#FFFBEE" },
+  { id:"postado",  label:"✅ Postado",      cor:"#166534", bg:"#EEFFF4" },
+];
+
+function IdeiaCard({ ideia, ideias, updateIdeias, onDragStart }) {
+  const [expanded, setExpanded] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [draft, setDraft] = useState({ titulo: ideia.titulo, obs: ideia.obs||"", comentario: ideia.comentario||"" });
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  const salvar = () => {
+    updateIdeias(ideias.map(i => i.id===ideia.id ? { ...i, ...draft } : i));
+    setEditando(false);
+  };
+
+  const moverPara = (colId) => {
+    updateIdeias(ideias.map(i => i.id===ideia.id ? { ...i, coluna: colId } : i));
+  };
+
+  const remover = () => updateIdeias(ideias.filter(i => i.id !== ideia.id));
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      style={{
+        background:"white", borderRadius:12, border:"1px solid #E8DDD0",
+        marginBottom:8, cursor:"grab", boxShadow:"0 1px 6px rgba(42,31,20,0.05)",
+        transition:"box-shadow .2s",
+      }}>
+
+      {/* Topo do card */}
+      <div style={{ padding:"12px 14px 10px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+          {editando ? (
+            <input value={draft.titulo} onChange={e => setDraft({...draft, titulo:e.target.value})}
+              style={{ flex:1, background:"#F7F3EE", border:"1px solid #C9A96E", borderRadius:8, padding:"5px 10px", fontSize:13, fontWeight:600, outline:"none", fontFamily:"'DM Sans',sans-serif" }} />
+          ) : (
+            <div onClick={() => setExpanded(!expanded)}
+              style={{ flex:1, fontSize:13, fontWeight:600, color:"#2A1F14", lineHeight:1.5, cursor:"pointer" }}>
+              {ideia.titulo}
+            </div>
+          )}
+          <div style={{ display:"flex", gap:2, flexShrink:0 }}>
+            <button onClick={() => { setEditando(!editando); setExpanded(true); setDraft({ titulo:ideia.titulo, obs:ideia.obs||"", comentario:ideia.comentario||"" }); }}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#C9A96E", fontSize:13, padding:"2px 4px", lineHeight:1 }}>✎</button>
+            <button onClick={() => setConfirmDel(true)}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#DDD0C0", fontSize:16, padding:"2px 4px", lineHeight:1 }}
+              onMouseEnter={e => e.target.style.color="#C4887A"}
+              onMouseLeave={e => e.target.style.color="#DDD0C0"}>×</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Corpo expandido */}
+      {(expanded || editando) && (
+        <div style={{ padding:"0 14px 12px", borderTop:"1px solid #F7F3EE" }}>
+          <div style={{ paddingTop:10 }}>
+            {editando ? (
+              <>
+                <div style={{ fontSize:10, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:4, fontWeight:600 }}>Conteúdo / Roteiro</div>
+                <textarea value={draft.obs} onChange={e => setDraft({...draft, obs:e.target.value})}
+                  rows={6} placeholder="Cole o roteiro, ideia, hook..."
+                  style={{ width:"100%", background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:8, padding:"8px 12px", fontSize:12.5, outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif", lineHeight:1.9 }} />
+                <div style={{ fontSize:10, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:4, marginTop:10, fontWeight:600 }}>Comentário / Feedback</div>
+                <textarea value={draft.comentario} onChange={e => setDraft({...draft, comentario:e.target.value})}
+                  rows={3} placeholder="Observações, revisões..."
+                  style={{ width:"100%", background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:8, padding:"8px 12px", fontSize:12.5, outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif", lineHeight:1.9 }} />
+                <div style={{ display:"flex", gap:6, marginTop:10 }}>
+                  <button onClick={salvar} style={{ flex:1, background:"#C9A96E", color:"#2A1F14", border:"none", borderRadius:8, padding:"7px", fontSize:12, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>Salvar</button>
+                  <button onClick={() => setEditando(false)} style={{ flex:1, background:"#EDE6DA", color:"#6B4F35", border:"none", borderRadius:8, padding:"7px", fontSize:12, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Cancelar</button>
+                </div>
+              </>
+            ) : (
+              <>
+                {ideia.obs && (
+                  <div style={{ marginBottom:10 }}>
+                    <div style={{ fontSize:10, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Conteúdo</div>
+                    <div style={{ fontSize:12.5, color:"#3D2E1E", lineHeight:1.9, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{ideia.obs}</div>
+                  </div>
+                )}
+                {ideia.comentario && (
+                  <div style={{ background:"#F7F3EE", borderRadius:8, padding:"8px 12px", marginBottom:10, borderLeft:"3px solid #C9A96E" }}>
+                    <div style={{ fontSize:10, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:4, fontWeight:600 }}>Comentário</div>
+                    <div style={{ fontSize:12.5, color:"#6B4F35", lineHeight:1.9, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{ideia.comentario}</div>
+                  </div>
+                )}
+                <div style={{ marginTop:6 }}>
+                  <div style={{ fontSize:10, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Mover para</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                    {KANBAN_COLUNAS.filter(c => c.id !== (ideia.coluna||"ideias")).map(c => (
+                      <button key={c.id} onClick={() => moverPara(c.id)}
+                        style={{ fontSize:10, padding:"3px 10px", borderRadius:20, border:`1px solid ${c.cor}44`, background:c.bg, color:c.cor, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {confirmDel && (
+        <div style={{ padding:"8px 14px 12px", display:"flex", gap:8, alignItems:"center", borderTop:"1px solid #F7F3EE" }}>
+          <span style={{ fontSize:12, color:"#9C8472", flex:1 }}>Remover este card?</span>
+          <button onClick={remover} style={{ fontSize:11, padding:"4px 12px", borderRadius:8, background:"#C4887A", color:"white", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Sim</button>
+          <button onClick={() => setConfirmDel(false)} style={{ fontSize:11, padding:"4px 12px", borderRadius:8, background:"#EDE6DA", color:"#6B4F35", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Não</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Ideias({ ideias, updateIdeias }) {
-  const [form, setForm] = useState({ titulo:"", formato:"Reels", tag:"Autoridade", obs:"" });
-  const [filtro, setFiltro] = useState("Todos");
-  const [del, setDel] = useState(null);
-  const [editComentario, setEditComentario] = useState(null);
-  const [comentarioDraft, setComentarioDraft] = useState("");
+  const [form, setForm] = useState({ titulo:"", obs:"" });
+  const [showForm, setShowForm] = useState(false);
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+
+  const ideiasComColuna = ideias.map(i => i.coluna ? i : { ...i, coluna:"ideias" });
 
   const addIdeia = () => {
     if (!form.titulo.trim()) return;
-    const next = [...ideias, { id: Date.now(), ...form, comentario: "", aprovado: false }];
-    updateIdeias(next); setForm({ titulo:"", formato:"Reels", tag:"Autoridade", obs:"" });
+    updateIdeias([...ideiasComColuna, { id:Date.now(), ...form, coluna:"ideias", comentario:"", aprovado:false, formato:"Reels", tag:"Autoridade" }]);
+    setForm({ titulo:"", obs:"" });
+    setShowForm(false);
   };
-  const removeIdeia = (id) => { updateIdeias(ideias.filter(i => i.id !== id)); setDel(null); };
-  const toggleAprovado = (id) => updateIdeias(ideias.map(i => i.id===id ? { ...i, aprovado: !i.aprovado } : i));
-  const saveComentario = (id) => { updateIdeias(ideias.map(i => i.id===id ? { ...i, comentario: comentarioDraft } : i)); setEditComentario(null); };
 
-  const filtradas = filtro==="Todos" ? ideias : ideias.filter(i => i.formato===filtro || i.tag===filtro);
-
-  const pillKey = (fmt) => ({ "Reels":"reels","Carrossel":"car","Stories":"st","Podcast":"pod","TikTok":"tiktok" }[fmt] || "reels");
+  const handleDrop = (colId) => {
+    if (!dragging) return;
+    updateIdeias(ideiasComColuna.map(i => i.id===dragging ? { ...i, coluna:colId } : i));
+    setDragging(null); setDragOver(null);
+  };
 
   return (
     <div>
-      <STitle>Banco de Ideias</STitle>
-      <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20 }}>
-        {["Todos",...FORMATOS,...TAGS].map(f => (
-          <button key={f} className="btn-ghost"
-            onClick={() => setFiltro(f)}
-            style={{ fontSize:11, padding:"5px 12px", borderRadius:20, border:`1px solid ${filtro===f?"#C9A96E":"#DDD0C0"}`, background: filtro===f?"#C9A96E":"white", color: filtro===f?"#2A1F14":"#9C8472", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all .15s" }}>
-            {f}
-          </button>
-        ))}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+        <STitle>Banco de Ideias</STitle>
+        <button onClick={() => setShowForm(!showForm)}
+          style={{ background:"#C9A96E", color:"#2A1F14", border:"none", borderRadius:10, padding:"8px 18px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", whiteSpace:"nowrap" }}>
+          + Nova ideia
+        </button>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:14, marginBottom:24 }}>
-        {filtradas.map(ideia => (
-          <div key={ideia.id} className="idea-card"
-            style={{ background:"white", borderRadius:14, padding:18, border: ideia.aprovado?"1.5px solid #C9A96E":"1px solid #E8DDD0", transition:"all .2s", position:"relative" }}>
-            {ideia.aprovado && (
-              <div style={{ position:"absolute", top:14, right:36, background:"#C9A96E", color:"#2A1F14", fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:20, letterSpacing:0.5, textTransform:"uppercase" }}>✓ Aprovado</div>
-            )}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                <span style={{ fontSize:10, padding:"3px 9px", borderRadius:20, background:PILL_STYLES[pillKey(ideia.formato)]?.bg||"#EDE6DA", color:PILL_STYLES[pillKey(ideia.formato)]?.color||"#6B4F35", fontWeight:600 }}>{ideia.formato}</span>
-                <span style={{ fontSize:10, padding:"3px 9px", borderRadius:20, background:"#F7F3EE", color:TAG_COLORS[ideia.tag]||"#6B4F35", fontWeight:600, border:`1px solid ${TAG_COLORS[ideia.tag]||"#DDD0C0"}22` }}>{ideia.tag}</span>
-              </div>
-              <button onClick={() => setDel(ideia.id)}
-                style={{ background:"none", border:"none", cursor:"pointer", color:"#DDD0C0", fontSize:16, padding:"0 2px", lineHeight:1 }}
-                onMouseEnter={e => e.target.style.color="#C4887A"}
-                onMouseLeave={e => e.target.style.color="#DDD0C0"}>×</button>
-            </div>
-            <div style={{ fontSize:14, fontWeight:600, color:"#2A1F14", marginBottom:6, lineHeight:1.5 }}>{ideia.titulo}</div>
-            {ideia.obs && <div style={{ fontSize:12, color:"#9C8472", lineHeight:1.5, marginBottom:10 }}>{ideia.obs}</div>}
+      {showForm && (
+        <Card style={{ marginBottom:20, background:"#FFFDF9", border:"1px solid #E8D5B0" }}>
+          <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:"#2A1F14", marginBottom:14 }}>Nova ideia</div>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Título</div>
+            <input value={form.titulo} onChange={e => setForm({...form, titulo:e.target.value})}
+              placeholder="Ex: Como usar a lua nova para manifestar..."
+              style={{ background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:10, padding:"10px 14px", width:"100%", outline:"none", fontFamily:"'DM Sans',sans-serif" }} />
+          </div>
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:11, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Conteúdo / Roteiro</div>
+            <textarea value={form.obs} onChange={e => setForm({...form, obs:e.target.value})}
+              rows={5} placeholder="Hook, roteiro, referências, intenção..."
+              style={{ background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:10, padding:"10px 14px", width:"100%", outline:"none", resize:"vertical", fontFamily:"'DM Sans',sans-serif", lineHeight:1.9, fontSize:13 }} />
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={addIdeia}
+              style={{ background:"#C9A96E", color:"#2A1F14", border:"none", borderRadius:10, padding:"10px 22px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+              + Adicionar
+            </button>
+            <button onClick={() => setShowForm(false)}
+              style={{ background:"#EDE6DA", color:"#6B4F35", border:"none", borderRadius:10, padding:"10px 18px", fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+              Cancelar
+            </button>
+          </div>
+        </Card>
+      )}
 
-            {/* Comentário */}
-            <div style={{ borderTop:"1px solid #F0E8DC", paddingTop:10, marginTop:4 }}>
-              {editComentario===ideia.id ? (
-                <div>
-                  <textarea value={comentarioDraft} onChange={e => setComentarioDraft(e.target.value)}
-                    rows={2} placeholder="Feedback, observação ou revisão..."
-                    style={{ width:"100%", background:"#F7F3EE", border:"1px solid #C9A96E", borderRadius:8, padding:"7px 10px", fontSize:12, outline:"none", resize:"none", fontFamily:"'DM Sans',sans-serif" }} />
-                  <div style={{ display:"flex", gap:6, marginTop:6 }}>
-                    <button onClick={() => saveComentario(ideia.id)} className="btn-gold"
-                      style={{ fontSize:11, padding:"4px 12px", borderRadius:8, background:"#C9A96E", color:"#2A1F14", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>Salvar</button>
-                    <button onClick={() => setEditComentario(null)}
-                      style={{ fontSize:11, padding:"4px 12px", borderRadius:8, background:"#EDE6DA", color:"#6B4F35", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Cancelar</button>
-                  </div>
-                </div>
-              ) : (
-                <div onClick={() => { setEditComentario(ideia.id); setComentarioDraft(ideia.comentario||""); }}
-                  style={{ cursor:"pointer", fontSize:12, color: ideia.comentario?"#6B4F35":"#C9A96E", fontStyle: ideia.comentario?"normal":"italic", lineHeight:1.5, minHeight:20 }}>
-                  {ideia.comentario || "✎ Adicionar comentário..."}
+      {/* KANBAN */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:10 }}>
+        {KANBAN_COLUNAS.map(col => {
+          const cards = ideiasComColuna.filter(i => (i.coluna||"ideias") === col.id);
+          const isOver = dragOver === col.id;
+          return (
+            <div key={col.id}
+              onDragOver={e => { e.preventDefault(); setDragOver(col.id); }}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={() => handleDrop(col.id)}
+              style={{
+                background: isOver ? col.bg : "#F7F3EE",
+                borderRadius:14, padding:"10px 8px", minHeight:420,
+                border: isOver ? `2px dashed ${col.cor}` : "2px solid transparent",
+                transition:"all .15s",
+              }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:col.cor }}>{col.label}</div>
+                <div style={{ background:col.bg, color:col.cor, border:`1px solid ${col.cor}44`, borderRadius:20, fontSize:10, fontWeight:700, padding:"1px 7px" }}>{cards.length}</div>
+              </div>
+              {cards.map(ideia => (
+                <IdeiaCard key={ideia.id} ideia={ideia} ideias={ideiasComColuna} updateIdeias={updateIdeias}
+                  onDragStart={() => setDragging(ideia.id)} />
+              ))}
+              {cards.length === 0 && (
+                <div style={{ textAlign:"center", padding:"30px 8px", color:"#C9A96E", fontSize:11, fontStyle:"italic", opacity:0.5 }}>
+                  Arraste cards aqui
                 </div>
               )}
             </div>
-
-            {/* Aprovação */}
-            <div style={{ marginTop:10 }}>
-              <button onClick={() => toggleAprovado(ideia.id)}
-                style={{ fontSize:11, padding:"4px 14px", borderRadius:20, border: ideia.aprovado?"none":"1px solid #DDD0C0", background: ideia.aprovado?"#C9A96E":"white", color: ideia.aprovado?"#2A1F14":"#9C8472", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight: ideia.aprovado?600:400, transition:"all .2s" }}>
-                {ideia.aprovado ? "✓ Revisão aprovada" : "Marcar como aprovado"}
-              </button>
-            </div>
-
-            {del===ideia.id && (
-              <div style={{ marginTop:12, display:"flex", gap:8, alignItems:"center" }}>
-                <span style={{ fontSize:12, color:"#9C8472" }}>Remover?</span>
-                <button onClick={() => removeIdeia(ideia.id)} style={{ fontSize:11, padding:"4px 12px", borderRadius:8, background:"#C4887A", color:"white", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Sim</button>
-                <button onClick={() => setDel(null)} style={{ fontSize:11, padding:"4px 12px", borderRadius:8, background:"#EDE6DA", color:"#6B4F35", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Não</button>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-      <Card>
-        <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:"#2A1F14", marginBottom:16 }}>Adicionar nova ideia</div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 160px 160px", gap:12, marginBottom:12 }}>
-          <div>
-            <div style={{ fontSize:11, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Título</div>
-            <input value={form.titulo} onChange={e => setForm({...form, titulo:e.target.value})} placeholder="Ex: Como usar a lua nova para manifestar..."
-              style={{ background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:10, padding:"10px 14px", width:"100%", outline:"none" }} />
-          </div>
-          <div>
-            <div style={{ fontSize:11, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Formato</div>
-            <select value={form.formato} onChange={e => setForm({...form, formato:e.target.value})}
-              style={{ background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:10, padding:"10px 14px", width:"100%", outline:"none" }}>
-              {FORMATOS.map(f => <option key={f}>{f}</option>)}
-            </select>
-          </div>
-          <div>
-            <div style={{ fontSize:11, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Tag</div>
-            <select value={form.tag} onChange={e => setForm({...form, tag:e.target.value})}
-              style={{ background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:10, padding:"10px 14px", width:"100%", outline:"none" }}>
-              {TAGS.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </div>
-        </div>
-        <div style={{ marginBottom:14 }}>
-          <div style={{ fontSize:11, color:"#9C8472", textTransform:"uppercase", letterSpacing:1, marginBottom:5, fontWeight:600 }}>Observações</div>
-          <textarea value={form.obs} onChange={e => setForm({...form, obs:e.target.value})} rows={2} placeholder="Contexto, referências, intenção de venda..."
-            style={{ background:"#F7F3EE", border:"1px solid #DDD0C0", borderRadius:10, padding:"10px 14px", width:"100%", outline:"none", resize:"none" }} />
-        </div>
-        <button className="btn-gold" onClick={addIdeia}
-          style={{ background:"#C9A96E", color:"#2A1F14", border:"none", borderRadius:10, padding:"10px 22px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all .2s" }}>
-          + Adicionar ao banco
-        </button>
-      </Card>
     </div>
   );
 }
@@ -960,3 +1044,4 @@ function Metas({ metas, updateMetas }) {
     </div>
   );
 }
+
